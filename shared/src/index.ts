@@ -1,7 +1,14 @@
-export * from './types/user';
-export * from './types/group';
-export * from './types/product';
-export * from './types/order';
-export * from './types/payment';
-export * from './types/review';
-export * from './types/api';
+export interface User {
+  id: string;
+  email: string;
+  username: string;
+  fullName?: string;
+}
+
+export interface Group {
+  id: string;
+  title: string;
+  description?: string;
+  store: string;
+  location: string;
+}
