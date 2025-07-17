@@ -1,0 +1,175 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  username  String   @unique
+  password  String
+  fullName  String?
+  phone     String?
+  avatar    String?
+  address   String?
+  trustScore Int     @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  groups    GroupMember[]
+  orders    Order[]
+  reviews   Review[]
+  createdGroups Group[]
+  
+  @@map("users")
+}
+
+model Group {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  store       String
+  location    String
+  pickupLocation String
+  pickupTime  DateTime
+  deadline    DateTime
+  minMembers  Int      @default(2)
+  maxMembers  Int      @default(10)
+  status      GroupStatus @default(RECRUITING)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  creatorId   String
+  creator     User     @relation(fields: [creatorId], references: [id])
+  members     GroupMember[]
+  products    Product[]
+  orders      Order[]
+  
+  @@map("groups")
+}
+
+model GroupMember {
+  id       String @id @default(cuid())
+  userId   String
+  groupId  String
+  joinedAt DateTime @default(now())
+  
+  // Relations
+  user     User   @relation(fields: [userId], references: [id])
+  group    Group  @relation(fields: [groupId], references: [id])
+  
+  @@unique([userId, groupId])
+  @@map("group_members")
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  price       Float
+  image       String?
+  category    String?
+  groupId     String
+  createdAt   DateTime @default(now())
+  
+  // Relations
+  group       Group    @relation(fields: [groupId], references: [id])
+  orderItems  OrderItem[]
+  
+  @@map("products")
+}
+
+model Order {
+  id          String      @id @default(cuid())
+  userId      String
+  groupId     String
+  totalAmount Float
+  status      OrderStatus @default(PENDING)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  
+  // Relations
+  user        User        @relation(fields: [userId], references: [id])
+  group       Group       @relation(fields: [groupId], references: [id])
+  items       OrderItem[]
+  payment     Payment?
+  
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String @id @default(cuid())
+  orderId   String
+  productId String
+  quantity  Int
+  price     Float
+  
+  // Relations
+  order     Order   @relation(fields: [orderId], references: [id])
+  product   Product @relation(fields: [productId], references: [id])
+  
+  @@map("order_items")
+}
+
+model Payment {
+  id              String        @id @default(cuid())
+  orderId         String        @unique
+  amount          Float
+  paymentMethod   String
+  transactionId   String?
+  status          PaymentStatus @default(PENDING)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  
+  // Relations
+  order           Order         @relation(fields: [orderId], references: [id])
+  
+  @@map("payments")
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  userId    String
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+  
+  // Relations
+  user      User     @relation(fields: [userId], references: [id])
+  
+  @@map("reviews")
+}
+
+enum GroupStatus {
+  RECRUITING
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PAID
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
